@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: mysql-pod
+  template:
+    metadata:
+      labels:
+        name: mysql-pod
+    spec:
+      containers: 
+        - image: mysql:5.7
+          name: web
+          ports: 
+            - containerPort: 3306
+          envFrom:
+            - secretRef:
+                name: secret
+            - configMapRef:
+                name: mysql-configmap
+          volumeMounts:
+            - name: my-volume
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: my-volume
+          persistentVolumeClaim:
+            claimName: my-pvc
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    name: mysql-service-label
+spec:
+  selector:
+    name: mysql-pod
+  ports:
+    - port: 3306
+      targetPort: 3306

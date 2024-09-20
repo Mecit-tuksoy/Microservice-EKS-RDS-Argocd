@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: web-pod
+  template:
+    metadata:
+      labels:
+        name: web-pod
+    spec:
+      containers: 
+        - image: mecit35/web-server
+          name: web-pod
+          ports: 
+            - containerPort: 80
+          envFrom:
+            - secretRef:
+                name: secret
+            - configMapRef:
+                name: mysql-configmap
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+  labels:
+    name: web-svc
+spec:
+  selector:
+    name: web-pod
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30001
