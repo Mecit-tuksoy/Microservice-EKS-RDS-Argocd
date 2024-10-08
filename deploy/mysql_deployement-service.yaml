@@ -14,7 +14,7 @@ spec:
     spec:
       containers: 
         - image: mysql:5.7
-          name: web
+          name: mysql-pod
           ports: 
             - containerPort: 3306
           envFrom:
