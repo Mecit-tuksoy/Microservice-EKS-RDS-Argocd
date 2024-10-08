@@ -22,6 +22,8 @@ spec:
                 name: secret
             - configMapRef:
                 name: mysql-configmap
+          imagePullPolicy: Always  
+
 --- 
 apiVersion: v1
 kind: Service
