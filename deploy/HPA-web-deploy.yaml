@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: result-service-hpa
+  name: web-deploy-hpa
   namespace: default
 spec:
   scaleTargetRef:
