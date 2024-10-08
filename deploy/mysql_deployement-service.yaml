@@ -25,6 +25,14 @@ spec:
           volumeMounts:
             - name: my-volume
               mountPath: /var/lib/mysql
+              
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
       volumes:
         - name: my-volume
           persistentVolumeClaim:

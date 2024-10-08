@@ -22,7 +22,14 @@ spec:
                 name: secret
             - configMapRef:
                 name: mysql-configmap
-          imagePullPolicy: Always  
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"  
 
 --- 
 apiVersion: v1
