@@ -17,11 +17,6 @@ spec:
           name: result
           ports: 
             - containerPort: 80
-          envFrom:
-            - secretRef:
-                name: secret
-            - configMapRef:
-                name: mysql-configmap
           imagePullPolicy: Always
           
           resources:

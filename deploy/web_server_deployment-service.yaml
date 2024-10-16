@@ -17,12 +17,8 @@ spec:
           name: web-pod
           ports: 
             - containerPort: 80
-          envFrom:
-            - secretRef:
-                name: secret
-            - configMapRef:
-                name: mysql-configmap
           imagePullPolicy: Always
+          
           resources:
             requests:
               cpu: "100m"
