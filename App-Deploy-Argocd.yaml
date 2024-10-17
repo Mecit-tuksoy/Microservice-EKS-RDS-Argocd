@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microservice-eks-rds-argocd
+  namespace: argocd  # ArgoCD'nin kurulu olduğu namespace
+spec:
+  project: default  # ArgoCD projesi (default olarak ayarlanmış)
+  
+  source:
+    repoURL: "https://github.com/Mecit-tuksoy/Microservice-EKS-RDS-Argocd.git"  # Git deposu
+    targetRevision: "main"  # Takip edilecek git dalı, commit ya da tag
+    path: "deploy"  # Manifest dosyalarının bulunduğu dizin
+
+  destination:
+    server: "https://kubernetes.default.svc"  # Kubernetes cluster'ı (self-managed)
+    namespace: default  # Manifest dosyalarının uygulanacağı namespace
+
+  syncPolicy:
+    automated: {}  # Otomatik senkronizasyonu etkinleştirme
