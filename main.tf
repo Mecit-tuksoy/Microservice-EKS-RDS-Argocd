@@ -306,8 +306,8 @@ resource "aws_security_group" "alb_sg" {
 }
 
 resource "aws_security_group" "ec2_sg" {
-  name        = "my-eks-cluster-eks-cluster-sg"
-  description = "EKS cluster security group"
+  name        = "rds-ec2-sg"
+  description = "RDS EC2 security group"
   vpc_id      = aws_vpc.eks_vpc.id
 
   ingress {
@@ -433,7 +433,7 @@ resource "aws_instance" "my_instance" {
   ami           = data.aws_ami.latest_amazon_linux.id
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public_eks_subnet[0].id
-  security_groups = [aws_security_group.alb_sg.id]
+  security_groups = [aws_security_group.ec2_sg.id]
   tags = {
     Name = "MyEC2Instance"
   }
@@ -443,7 +443,9 @@ resource "aws_instance" "my_instance" {
               yum update -y
               yum install -y mysql
               EOF
-  depends_on = [aws_security_group.alb_sg]
+  depends_on = [
+    aws_security_group.ec2_sg,
+    aws_db_instance.mysql]
 }
 
 # RDS veritabanını başlatma
@@ -454,7 +456,7 @@ resource "null_resource" "initialize_db" {
     ]
   provisioner "remote-exec" {
     inline = [
-      "for i in {1..30}; do mysql -h ${aws_db_instance.mysql.address} -u ${local.credentials.username} -p${local.credentials.password} -e 'CREATE DATABASE IF NOT EXISTS phonebookdb;' && break || sleep 10; done"
+      "for i in {1..30}; do mysql -h ${aws_db_instance.mysql.address} -u ${local.credentials.username} -p${local.credentials.password} -e 'CREATE DATABASE IF NOT EXISTS phonebookdb;' && break || echo 'Waiting for database...' && sleep 10; done"
     ]
     
     connection {
@@ -470,9 +472,10 @@ resource "null_resource" "cleanup" {
   depends_on = [null_resource.initialize_db]
 
   provisioner "local-exec" {
-    command = "echo 'Cleanup: EC2 instance is ready to be terminated.'"
+    command = "aws ec2 terminate-instances --instance-ids ${aws_instance.my_instance.id} --region us-east-1"
   }
 }
+
 
 # Secrets Manager Secret Version
 resource "aws_secretsmanager_secret_version" "rds_endpoint_secret_version" {
@@ -656,7 +659,8 @@ resource "aws_eks_cluster" "eks_cluster" {
     aws_security_group.eks_cluster_sg,
     aws_subnet.private_eks_subnet,
     aws_route_table.private,
-    aws_vpc.eks_vpc
+    aws_vpc.eks_vpc,
+    aws_nat_gateway.nat_gw
   ]
 }
 
@@ -666,24 +670,18 @@ resource "aws_eks_node_group" "eks_node_group" {
   node_group_name = "my-node-group"
   node_role_arn   = aws_iam_role.eks_node_group_role.arn
   subnet_ids = aws_subnet.private_eks_subnet[*].id
-
-
   scaling_config {
     desired_size = 1
     max_size     = 2
     min_size     = 1
   }
-
   instance_types = ["t3.medium"]
-
   remote_access {
     ec2_ssh_key = "newkey"  
   }
-
   update_config {
     max_unavailable = 1
   }
-
   depends_on = [
     aws_eks_cluster.eks_cluster,
     aws_iam_role_policy_attachment.eks_node_group_policy,
@@ -794,12 +792,6 @@ resource "aws_cloudwatch_metric_alarm" "cpu_alarm_low" {
   ]
 }
 
-
-
-
-
-
-
 # Data Sources for EKS Cluster
 data "aws_eks_cluster" "eks_cluster" {
   name = aws_eks_cluster.eks_cluster.name
@@ -883,13 +875,26 @@ resource "helm_release" "argocd" {
   ]  
 }
 
+resource "null_resource" "update_kubeconfig" {
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --name ${aws_eks_cluster.eks_cluster.name} --region us-east-1"
+  }
+
+  depends_on = [aws_eks_cluster.eks_cluster]
+}
+
+
+
 # Null Resource to Apply Argo CD Manifest
 resource "null_resource" "apply_manifest" {
   provisioner "local-exec" {
     command = "kubectl apply -f ./App-Deploy-Argocd.yaml"
   }
   
-  depends_on = [helm_release.argocd]
+  depends_on = [
+    helm_release.argocd,
+    null_resource.update_kubeconfig
+    ]
 }
 
 # Helm Release for NGINX Ingress
@@ -928,7 +933,10 @@ resource "null_resource" "apply_ingress_manifest" {
     command = "kubectl apply -f ./App-İngress.yaml"
   }
   
-  depends_on = [helm_release.nginx_ingress]
+  depends_on = [
+    helm_release.nginx_ingress,
+    null_resource.update_kubeconfig
+    ]
 }
 
 # Helm Release for Metrics Server
@@ -936,7 +944,7 @@ resource "helm_release" "metrics_server" {
   name       = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   chart      = "metrics-server"
-  namespace  = "kube_system"
+  namespace  = "kube-system"
   version    = "3.12.2" 
 
   set {
@@ -944,12 +952,14 @@ resource "helm_release" "metrics_server" {
     value = "true"
   }
 
-  set {
+  # set {
+  #   name  = "args"
+  #   value = "--kubelet-preferred-address-types=InternalIP,--kubelet-insecure-tls"
+  # }
+
+  set_list {
     name  = "args"
-    value = jsonencode([
-      "--kubelet-preferred-address-types=InternalIP",
-      "--kubelet-insecure-tls"
-    ])
+    value = ["--kubelet-preferred-address-types=InternalIP","--kubelet-insecure-tls"]
   }
 
   depends_on = [
