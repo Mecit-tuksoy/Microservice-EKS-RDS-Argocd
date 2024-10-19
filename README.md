@@ -441,8 +441,9 @@ provider "aws" {
 }
 ```
 
-> > > Bu yapılandırmada, Terraform'un remote state dosyasını güvenli bir şekilde S3'te önceden oluşturduğumuz bucked'da saklamasını sağlar ve aynı anda birden fazla Terraform işleminin state dosyasını değiştirmemesi için DynamoDB kullanılarak kilitleme işlemini sağlar.
-> > > AWS, Kubernetes, Helm ve Null sağlayıcıları tanımlanarak gerekli altyapı yönetimi gerçekleştirilir. Her sağlayıcı için versiyonlar belirtilmiştir, böylece bu sürümler arasında uyumluluk sağlanır.
+- Bu yapılandırmada, Terraform'un remote state dosyasını güvenli bir şekilde S3'te önceden oluşturduğumuz bucked'da saklamasını sağlar ve aynı anda birden fazla Terraform işleminin state dosyasını değiştirmemesi için DynamoDB kullanılarak kilitleme işlemini sağlar.
+
+- AWS, Kubernetes, Helm ve Null sağlayıcıları tanımlanarak gerekli altyapı yönetimi gerçekleştirilir. Her sağlayıcı için versiyonlar belirtilmiştir, böylece bu sürümler arasında uyumluluk sağlanır.
 
 ```sh
 
@@ -1044,7 +1045,7 @@ resource "aws_iam_role_policy_attachment" "SecretsManager_policy" {
    6- AutoScalingFullAccess: Node'ların Auto Scaling işlemlerini gerçekleştirebilmesi için gerekli yetkiyi sağlar.
 
    7- AmazonRDSFullAccess: Node'ların RDS veritabanlarına tam erişim izni verir.
-   
+
    8- SecretsManagerReadWrite: Node'ların AWS Secrets Manager'dan şifreleri okuyup yazabilmesini sağlar.
 
 ````sh
