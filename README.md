@@ -1018,10 +1018,15 @@ resource "aws_iam_role_policy_attachment" "SecretsManager_policy" {
 - EKS cluster'ının AWS hizmetlerine erişebilmesi için bir rol oluşturur bu role ile;
   
    1- AmazonEKSClusterPolicy: EKS cluster'ının genel AWS hizmetlerine erişim izni verir.
+
    2- CloudWatchFullAccess: CloudWatch kullanarak EKS metriklerini ve loglarını izleme yetkisi verir.
+
    3- AutoScalingFullAccess: EKS cluster'ının Auto Scaling işlemleri yapmasına izin verir.
+
    4- AmazonEKSServicePolicy: EKS servislerinin AWS kaynaklarına erişim izni sağlar.
+
    5- AmazonRDSFullAccess: EKS üzerinden RDS veritabanlarına tam erişim sağlar.
+   
    6- SecretsManagerReadWrite: EKS, AWS Secrets Manager'dan şifreleri okuyup yazabilir.
 
 - EKS node'larının (worker node'lar) AWS servislerine erişebilmesi için bir rol oluşturur bu role ile;
