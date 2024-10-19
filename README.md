@@ -331,6 +331,19 @@ resource "aws_dynamodb_table" "terraform_locks" {
   }
 }
 ```
+Terraform doyasını uygulamak için;
+````sh
+terraform init  #providers indirir
+````
+````sh
+terraform plan #oluşcak kaynakları ve varsa hataları gösterir
+````
+````sh
+terraform apply #kodu uygulamaya başlar, kaynaklar oluşur.
+````
+````sh
+terraform destroy #Kaynakları sonlandırmak için.
+````
 
 # 7. Adım:
 
