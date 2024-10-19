@@ -871,13 +871,13 @@ EOF
 }
 ```
 
-> > > Bu Terraform konfigürasyonu;
+> > > Bu Terraform konfigürasyonu ile;
 
-- RDS veritabanının sadece private subnet'lerde çalışmasını sağlamak.
-- MySQL 8.0 veritabanı oluşturmak.
-- AWS Secrets Manager'da depolanan veritabanı kimlik bilgilerini almak ve kullanmak.
-- MySQL istemcisi kurulu bir EC2 instance’ı oluşturmak ve EC2 instance’ı üzerinden RDS veritabanına bağlanarak, phonebookdb adında bir veritabanı oluşturmak. Sonra EC2 instance'ını işlem tamamlandıktan sonra otomatik olarak silmek.
-- RDS veritabanı endpoint bilgisini AWS Secrets Manager’da saklamak.
+- RDS veritabanının sadece private subnet'lerde çalışması sağlanır.
+- MySQL 8.0 veritabanı oluşturulur.
+- AWS Secrets Manager'da depolanan veritabanı kimlik bilgileri alınır ve kullanılır.
+- MySQL istemcisi kurulu bir EC2 instance’ı oluşturulur ve EC2 instance’ı üzerinden RDS veritabanına bağlanarak, phonebookdb adında bir veritabanı oluşturulur. Sonra EC2 instance'ını işlem tamamlandıktan sonra otomatik olarak silinir.
+- RDS veritabanı endpoint bilgisini AWS Secrets Manager’da saklanır.
 
 ```sh
 
