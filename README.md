@@ -1026,18 +1026,26 @@ resource "aws_iam_role_policy_attachment" "SecretsManager_policy" {
    4- AmazonEKSServicePolicy: EKS servislerinin AWS kaynaklarına erişim izni sağlar.
 
    5- AmazonRDSFullAccess: EKS üzerinden RDS veritabanlarına tam erişim sağlar.
-   
+
    6- SecretsManagerReadWrite: EKS, AWS Secrets Manager'dan şifreleri okuyup yazabilir.
 
 - EKS node'larının (worker node'lar) AWS servislerine erişebilmesi için bir rol oluşturur bu role ile;
-  1- AmazonEKSWorkerNodePolicy: EKS node'larının AWS servislerine erişim yetkisi sağlar.
-  2- AmazonEKS_CNI_Policy: EKS node'larının ağ yapılandırmalarını yönetmesini sağlar.
-  3- AmazonEC2ContainerRegistryReadOnly: Node'ların ECR (Elastic Container Registry) üzerindeki container imajlarına erişmesini sağlar.
-  4- ElasticLoadBalancingFullAccess: EKS, Elastic Load Balancers (ELB) ile etkileşim kurabilir.
-  5- CloudWatchFullAccess: Node'ların CloudWatch üzerinden metrik ve loglara erişimini sağlar.
-  6- AutoScalingFullAccess: Node'ların Auto Scaling işlemlerini gerçekleştirebilmesi için gerekli yetkiyi sağlar.
-  7- AmazonRDSFullAccess: Node'ların RDS veritabanlarına tam erişim izni verir.
-  8- SecretsManagerReadWrite: Node'ların AWS Secrets Manager'dan şifreleri okuyup yazabilmesini sağlar.
+  
+   1- AmazonEKSWorkerNodePolicy: EKS node'larının AWS servislerine erişim yetkisi sağlar.
+
+   2- AmazonEKS_CNI_Policy: EKS node'larının ağ yapılandırmalarını yönetmesini sağlar.
+
+   3- AmazonEC2ContainerRegistryReadOnly: Node'ların ECR (Elastic Container Registry) üzerindeki container imajlarına erişmesini sağlar.
+
+   4- ElasticLoadBalancingFullAccess: EKS, Elastic Load Balancers (ELB) ile etkileşim kurabilir.
+
+   5- CloudWatchFullAccess: Node'ların CloudWatch üzerinden metrik ve loglara erişimini sağlar.
+
+   6- AutoScalingFullAccess: Node'ların Auto Scaling işlemlerini gerçekleştirebilmesi için gerekli yetkiyi sağlar.
+
+   7- AmazonRDSFullAccess: Node'ların RDS veritabanlarına tam erişim izni verir.
+   
+   8- SecretsManagerReadWrite: Node'ların AWS Secrets Manager'dan şifreleri okuyup yazabilmesini sağlar.
 
 ````sh
 
