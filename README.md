@@ -1,5 +1,7 @@
 # Microservice-EKS-RDS-Argocd
 
+![Architecture](./architecture.png)
+
 This project consists of a microservise Phonebook application written in Python and developed using the Flask framework, setting up a VPC on AWS with Terraform, creating an RDS and EKS cluster in a private subnet, configuring the GitOps workflow using ArgoCD and Ingress Controller, and deploying the application on EKS using credentials information from AWS Secrets Manager.
 
 ## Gereksinimler
