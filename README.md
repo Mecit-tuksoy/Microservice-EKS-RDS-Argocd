@@ -4,26 +4,25 @@
 
 This project consists of a microservise Phonebook application written in Python and developed using the Flask framework, setting up a VPC on AWS with Terraform, creating an RDS and EKS cluster in a private subnet, configuring the GitOps workflow using ArgoCD and Ingress Controller, and deploying the application on EKS using credentials information from AWS Secrets Manager.
 
-## Gereksinimler
+## Requirements
+1. **AWS CLI** - used to manage AWS services. Version: aws-cli/2.18.4
+2. **Terraform** - Tool for managing infrastructure with code. Version: v1.9.7
+3. **kubectl** - Command line tool for managing Kubernetes cluster. Version: v1.31.0
+4. **Git** - for integration with GitHub. Version: 2.34.1
 
-1. **AWS CLI** - AWS hizmetlerini yönetmek için kullanılır. Version: aws-cli/2.18.4
-2. **Terraform** - Altyapıyı kodla yönetmek için kullanılan araç. Version: v1.9.7
-3. **kubectl** - Kubernetes cluster'ını yönetmek için komut satırı aracı. Version: v1.31.0
-4. **Git** - GitHub ile entegrasyon için. Version: 2.34.1
+# Step 1:
+> > > We create a new user in AWS with access rights to VPC, EKS, RDS, Secret Manager, S3, DaynamoDb, CloudWatch, Ec2 services.
 
-# 1. Adım:
+> > > With the Secret Key and Secret Access Key information of this user we created, we access AWS services via CLI by doing sh`aws configure` from our local computer.
 
-> > > AWS'de VPC, EKS, RDS, Secret Manager, S3, DaynamoDb, CloudWatch, Ec2 servislerine erişim yetkileri olan yeni bir kullanıcı oluşturuyoruz.
+# Step 2:
+> > > We add AWS SDK boto3 to the Phonebook application written in Python and developed using Flask framework to enable the application to pull the credentials required for the database from AWS Secret manager. There is an added version in the repo.
 
-> > > Oluşturduğumuz bu kullanıcının Secret Key ve Secret Access Key bilgileri ile local bilgisayarımızdan sh`aws configure` yaparak AWS servislerine CLI aracılığı ile erişim sağlıyoruz.
+# Step 3:
+>>> In AWS Secret manager, we create a secret with the same name as **“prod/mysql/credentials ‘** specified in line 13 in the application code and enter the credentials required for RDS in the form of ’key”, “value”.
 
-# 2. Adım:
-
-> > > Python ile yazılmış ve Flask framework kullanılılarak geliştirilmiş Phonebook uygulamasına AWS SDK'yi boto3 ekleyerek uygulamanın veri tabanı için gerekli olan kimlik bilgilerini AWS Secret manager'dan çekebilmesini sağlıyoruz. Repoda eklenmiş hali var.
-
-# 3. Adım:
-
-> > > Uygulamayı containerize etmek için Dockerfile'ını yazıyoruz.
+# Step 4:
+> > > We write the Dockerfile to containerize the application.
 
 ```sh
 # Dockerfile for web server
@@ -54,9 +53,8 @@ PyMySQL==1.0.2
 boto3
 ```
 
-# 4. Adım:
-
-> > > Dockerfile ile image build ediyoruz ve Dockerhub'a push ediyoruz.
+# Step 5:
+> > > > We build image with Dockerfile and push it to Dockerhub.
 
 ```sh
 docker build -t mecit35/web-server .
@@ -78,11 +76,10 @@ docker push mecit35/web-server
 docker push mecit35/result-server-2
 ```
 
-# 5. Adım:
+# Step 6:
+> > > > We prepare the k8s manifest files of the application.
 
-> > > Uygulamanın k8s manifest dosyalarını hazırlıyoruz.
-
-web-server için Deployment ve Service yaml dosyaları:
+Deployment and Service yaml files for web-server:
 
 ```sh
 apiVersion: apps/v1
@@ -131,7 +128,7 @@ spec:
       nodePort: 30001
 ```
 
-Result-server için Deployment ve Service yaml dosyaları:
+Deployment and Service yaml files for Result-server:
 
 ```sh
 apiVersion: apps/v1
@@ -179,7 +176,7 @@ spec:
       nodePort: 30002
 ```
 
-Depolama alanı için pv ve pvc yaml dosyaları:
+Pv and pvc yaml files for storage space:
 
 ```sh
 apiVersion: v1
@@ -210,8 +207,9 @@ spec:
       storage: 4Gi
 ```
 
-Podları scale edebilmek için Horizontal Pod Autoscaler yaml dosyaları:
-web server için:
+Horizontal Pod Autoscaler yaml files to scale the pods:
+
+for web server:
 
 ```sh
 apiVersion: autoscaling/v2
@@ -235,7 +233,7 @@ spec:
           averageUtilization: 50
 ```
 
-result server için:
+for result server:
 
 ```sh
 apiVersion: autoscaling/v2
@@ -259,13 +257,12 @@ spec:
           averageUtilization: 50
 ```
 
-> > > Oluşturduğumuz bu deploy kaynaklarını ArgoCd ile deploy edebilmek için bir github reposuna push etmemiz gerekiyor.
+> > > In order to deploy these deploy resources with ArgoCd, we need to push them to a github repo.
 
-> > > Uygulamamız hazır. Uygulamanın çalışıp çalışmadığını kontrol için EC2 konsolda t2.micro bir instance ayağa kaldırıp docker kurarak ve EC2'ya gerekli olacak olan Secret manager'a erişim izni de vererek deneme yapabiliriz.
+> > > Our application is ready. To check if the application is working, we can try to stand up a t2.micro instance in the EC2 console, install docker and give EC2 access to the Secret manager that will be required.
 
-# 6. Adım:
-
-> > > Terraform'un state dosyalarının güvenli bir şekilde saklanması, sürümlenmesi ve şifrelenmesi için S3 kullanıp, aynı zamanda kilitleme işlemi için DynamoDB table'ını kullanarak çoklu işlem sorunlarını engelliyoruz. Gizlilik, güvenlik, ve geri dönüş yapılabilirlik özellikleri ekliyoruz.
+# Step 7:
+> > > > We use S3 to securely store, version, and encrypt Terraform's state files, and also use DynamoDB table for locking to avoid multi-processing issues. We add privacy, security, and reversibility features.
 
 ```sh
 # backend-setup.tf
@@ -274,10 +271,10 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# S3 Bucket Oluşturma
+# S3 Bucket Creation
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "mecit-terraform-state" # Benzersiz bir bucket adı seçin
-  force_destroy = true  # terraform destroy dediğimizde bu buckedın silinmesi için. !!DİKKAT!!
+  bucket = "mecit-terraform-state" # Choose a unique bucket name
+  force_destroy = true  # to delete this bucked when we say terraform destroy. ATTENTION!!!
 
   tags = {
     Name        = "Terraform State Bucket"
@@ -285,7 +282,7 @@ resource "aws_s3_bucket" "terraform_state" {
   }
  }
 
-# S3 Bucket Public Access Block Ayarı
+# S3 Bucket Public Access Block Setting
 resource "aws_s3_bucket_public_access_block" "terraform_state_block" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -296,7 +293,7 @@ resource "aws_s3_bucket_public_access_block" "terraform_state_block" {
 }
 
 
-# S3 Bucket Versioning Ayarı
+# S3 Bucket Versioning Setting
 resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -305,7 +302,7 @@ resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
   }
 }
 
-# S3 Bucket Server-Side Encryption Ayarı
+#S3 Bucket Server-Side Encryption Setting
 resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_encryption" {
   bucket = aws_s3_bucket.terraform_state.id
 
@@ -316,7 +313,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_e
   }
 }
 
-# DynamoDB Table Oluşturma (State Kilitleme için)
+# DynamoDB Table Creation (for State Locking)
 resource "aws_dynamodb_table" "terraform_locks" {
   name         = "mecit-terraform-state-lock"
   billing_mode = "PAY_PER_REQUEST"
@@ -333,23 +330,25 @@ resource "aws_dynamodb_table" "terraform_locks" {
   }
 }
 ```
-Terraform doyasını uygulamak için;
+
+
+To implement terraforming;
+
 ````sh
-terraform init  #providers indirir
+terraform init #providers downloads
 ````
 ````sh
-terraform plan #oluşcak kaynakları ve varsa hataları gösterir
+terraform plan #shows the resources that will be generated and any errors
 ````
 ````sh
-terraform apply #kodu uygulamaya başlar, kaynaklar oluşur.
+terraform apply #code starts to apply, resources are created.
 ````
 ````sh
-terraform destroy #Kaynakları sonlandırmak için.
+terraform destroy #To terminate resources.
 ````
 
-# 7. Adım:
-
-> > > Oluşturacağımız EKS'de kuracağımız Nginx İngress Controller için uygulamamızın Ingress yaml dosyasını oluşturuyoruz. Bu dosya EKS'yi oluşturduğumuz tf dosyası ile aynı dizinde ve ismi tf dosyasında belirtilecek olan "App-İngress.yaml" olmalı:
+# Step 8:
+> > > > We create the Ingress yaml file of our application for the Nginx Ingress Controller that we will install in the EKS we will create. This file should be in the same directory as the tf file where we created the EKS and its name should be “App-Ingress.yaml” which will be specified in the tf file:
 
 ```sh
 apiVersion: networking.k8s.io/v1
@@ -380,33 +379,32 @@ spec:
                   number: 80
 ```
 
-> > > Oluşturacağımız EKS'de kuracağımız ArgoCd için GitOps iş akışını belirttiğimiz yaml dosyasını oluşturuyoruz. Bu dosya EKS'yi oluşturduğumuz tf dosyası ile aynı dizinde ve ismi tf dosyasında belirtilecek olan "App-Deploy-Argocd.yaml" olmalı:
+> > > > We create the yaml file where we specify the GitOps workflow for ArgoCd that we will install in the EKS we will create. This file should be in the same directory as the tf file where we created the EKS and its name should be “App-Deploy-Argocd.yaml” which will be specified in the tf file:
 
 ```sh
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: microservice-eks-rds-argocd
-  namespace: argocd  # ArgoCD'nin kurulu olduğu namespace
+  namespace: argocd  # Namespace where ArgoCD is installed
 spec:
-  project: default  # ArgoCD projesi (default olarak ayarlanmış)
+  project: default  # ArgoCD project (set by default)
 
   source:
-    repoURL: "https://github.com/Mecit-tuksoy/Microservice-EKS-RDS-Argocd.git"  # Git deposu
-    targetRevision: "main"  # Takip edilecek git dalı, commit ya da tag
-    path: "deploy"  # Manifest dosyalarının bulunduğu dizin
+    repoURL: "https://github.com/Mecit-tuksoy/Microservice-EKS-RDS-Argocd.git"  
+    targetRevision: "main" 
+    path: "deploy"  
 
   destination:
-    server: "https://kubernetes.default.svc"  # Kubernetes cluster'ı (self-managed)
-    namespace: default  # Manifest dosyalarının uygulanacağı namespace
+    server: "https://kubernetes.default.svc" 
+    namespace: default  
 
   syncPolicy:
-    automated: {}  # Otomatik senkronizasyonu etkinleştirme
+    automated: {} 
 ```
 
-# 8. Adım:
-
-> > > Şimdi AWS'de ayağa kaldıracağımız resourceları belirttiğimiz terraform dosyamızı oluşturmaya başlıyoruz. Bu dosyayı parça parça açıklayarak veriyorum:
+# Step 9:
+> > > > Now we start creating our terraform file where we specify the resources that we will stand up in AWS. I will explain this file piece by piece:
 
 ```sh
 terraform {
@@ -443,9 +441,9 @@ provider "aws" {
 }
 ```
 
-- Bu yapılandırmada, Terraform'un remote state dosyasını güvenli bir şekilde S3'te önceden oluşturduğumuz bucked'da saklamasını sağlar ve aynı anda birden fazla Terraform işleminin state dosyasını değiştirmemesi için DynamoDB kullanılarak kilitleme işlemini sağlar.
+- In this configuration, it enables Terraform to securely store the remote state file in the bucked we created previously in S3 and provides locking using DynamoDB so that multiple Terraform processes cannot change the state file at the same time.
 
-- AWS, Kubernetes, Helm ve Null sağlayıcıları tanımlanarak gerekli altyapı yönetimi gerçekleştirilir. Her sağlayıcı için versiyonlar belirtilmiştir, böylece bu sürümler arasında uyumluluk sağlanır.
+- AWS, Kubernetes, Helm and Null providers are defined and the necessary infrastructure management is realized. Versions are specified for each provider, thus ensuring compatibility between these versions.
 
 ```sh
 
@@ -576,7 +574,7 @@ resource "aws_route_table" "private" {
 
 # Private Route Table Association
 resource "aws_route_table_association" "private" {
-  count = 2  # İki özel subnet için association oluşturuyoruz
+  count = 2  
   subnet_id      = aws_subnet.private_eks_subnet[count.index].id
   route_table_id = aws_route_table.private.id
   depends_on = [
@@ -590,7 +588,7 @@ resource "aws_route_table_association" "private" {
 }
 ```
 
-> > > Bu yapılandırma, AWS'de EKS için uygun bir VPC oluşturur. Public subnet'ler internete doğrudan erişebilirken, private subnet'ler NAT Gateway üzerinden internete erişir. Bu, güvenli ve ölçeklenebilir bir Kubernetes ortamı oluşturmak için gereklidir.
+> > > > This configuration creates an appropriate VPC for EKS in AWS. Public subnets can access the internet directly, while private subnets access the internet via NAT Gateway. This is necessary to create a secure and scalable Kubernetes environment.
 
 ```sh
 # Security Groups
@@ -749,20 +747,20 @@ resource "aws_security_group" "rds_sg" {
 }
 ```
 
-> > > Bu Terraform konfigürasyonunda farklı AWS bileşenleri için güvenlik grupları tanımlanmıştır. Her güvenlik grubunun amacı;
+> > > > In this Terraform configuration, security groups are defined for different AWS components. The purpose of each security group is;
 
-- EKS cluster'a gelen ve giden tüm trafiği kontrol etmek.
-- EKS worker node'ların cluster ile iletişimini sağlamak.
-- Application Load Balancer (ALB) üzerinden gelen HTTP, HTTPS ve SSH trafiğini yönetmek.
-- EC2 instance'lara SSH erişimini sağlamak.
-- RDS veritabanına EKS ve EC2'den MySQL (3306) trafiğini yönetmek.
+- To control all traffic to and from the EKS cluster.
+- To ensure the communication of EKS worker nodes with the cluster.
+- To manage HTTP, HTTPS and SSH traffic coming from Application Load Balancer (ALB).
+- Providing SSH access to EC2 instances.
+- Managing MySQL (3306) traffic from EKS and EC2 to RDS database.
 
 ```sh
 
 resource "aws_db_subnet_group" "main" {
   name       = "main-db-subnet-group"
   subnet_ids = [
-    for subnet in aws_subnet.private_eks_subnet : subnet.id  # Her bir subnet'in ID'sini alıyoruz
+    for subnet in aws_subnet.private_eks_subnet : subnet.id  # We get the ID of each subnet
   ]
   tags = {
     Name = "main-db-subnet-group"
@@ -787,7 +785,7 @@ resource "aws_db_instance" "mysql" {
   db_subnet_group_name    = aws_db_subnet_group.main.id
   vpc_security_group_ids  = [aws_security_group.rds_sg.id]
   publicly_accessible     = false
-  skip_final_snapshot     = true  # Final snapshot oluşturulmayacak
+  skip_final_snapshot     = true  # Final snapshot will not be created
   tags = {
     Name = "phonebookdb"
   }
@@ -798,7 +796,7 @@ resource "aws_db_instance" "mysql" {
   ]
 }
 
-# AWS Secrets Manager'dan Credentials Bilgilerini Çekmek için Veri Kaynakları
+# Data Sources to Pull Credentials Information from AWS Secrets Manager
 data "aws_secretsmanager_secret_version" "credentials" {
   secret_id = "prod/mysql/credentials"
 }
@@ -816,7 +814,6 @@ data "aws_ami" "latest_amazon_linux" {
   }
 }
 
-# EC2 Instance oluşturma
 resource "aws_instance" "my_instance" {
   ami           = data.aws_ami.latest_amazon_linux.id
   instance_type = "t2.micro"
@@ -874,13 +871,13 @@ EOF
 }
 ```
 
-> > > Bu Terraform konfigürasyonu ile;
+> > > > With this Terraform configuration;
 
-- RDS veritabanının sadece private subnet'lerde çalışması sağlanır.
-- MySQL 8.0 veritabanı oluşturulur.
-- AWS Secrets Manager'da depolanan veritabanı kimlik bilgileri alınır ve kullanılır.
-- MySQL istemcisi kurulu bir EC2 instance’ı oluşturulur ve EC2 instance’ı üzerinden RDS veritabanına bağlanarak, phonebookdb adında bir veritabanı oluşturulur. Sonra EC2 instance'ını işlem tamamlandıktan sonra otomatik olarak silinir.
-- RDS veritabanı endpoint bilgisini AWS Secrets Manager’da saklanır.
+- RDS database is enabled to run only on private subnets.
+- MySQL 8.0 database is created.
+- Database credentials stored in AWS Secrets Manager are retrieved and used.
+- An EC2 instance with MySQL client installed is created and a database named phonebookdb is created by connecting to the RDS database through the EC2 instance. Then the EC2 instance is automatically deleted after the process is completed.
+- The RDS database endpoint information is stored in AWS Secrets Manager.
 
 ```sh
 
@@ -1015,40 +1012,38 @@ resource "aws_iam_role_policy_attachment" "SecretsManager_policy" {
   ]
 }
 ```
-
-> > > Bu Terraform kodu;
-
-- EKS cluster'ının AWS hizmetlerine erişebilmesi için bir rol oluşturur bu role ile;
+> > > > This Terraform code;
+- Creates a role for EKS cluster to access AWS services with this role;
   
-   1- AmazonEKSClusterPolicy: EKS cluster'ının genel AWS hizmetlerine erişim izni verir.
+   1- AmazonEKSClusterPolicy: Allows the EKS cluster to access general AWS services.
 
-   2- CloudWatchFullAccess: CloudWatch kullanarak EKS metriklerini ve loglarını izleme yetkisi verir.
+   2- CloudWatchFullAccess: Authorizes monitoring EKS metrics and logs using CloudWatch.
 
-   3- AutoScalingFullAccess: EKS cluster'ının Auto Scaling işlemleri yapmasına izin verir.
+   3- AutoScalingFullAccess: Allows the EKS cluster to perform Auto Scaling operations.
 
-   4- AmazonEKSServicePolicy: EKS servislerinin AWS kaynaklarına erişim izni sağlar.
+   4- AmazonEKSServicePolicy: Allows EKS services to access AWS resources.
 
-   5- AmazonRDSFullAccess: EKS üzerinden RDS veritabanlarına tam erişim sağlar.
+   5- AmazonRDSFullAccess: Provides full access to RDS databases over EKS.
 
-   6- SecretsManagerReadWrite: EKS, AWS Secrets Manager'dan şifreleri okuyup yazabilir.
+   6- SecretsManagerReadWrite: EKS can read and write passwords from AWS Secrets Manager.
 
-- EKS node'larının (worker node'lar) AWS servislerine erişebilmesi için bir rol oluşturur bu role ile;
+- It creates a role for EKS nodes (worker nodes) to access AWS services with this role;
   
-   1- AmazonEKSWorkerNodePolicy: EKS node'larının AWS servislerine erişim yetkisi sağlar.
+   1- AmazonEKSWorkerNodePolicy: Authorizes EKS nodes to access AWS services.
 
-   2- AmazonEKS_CNI_Policy: EKS node'larının ağ yapılandırmalarını yönetmesini sağlar.
+   2- AmazonEKS_CNI_Policy: Allows EKS nodes to manage network configurations.
 
-   3- AmazonEC2ContainerRegistryReadOnly: Node'ların ECR (Elastic Container Registry) üzerindeki container imajlarına erişmesini sağlar.
+   3- AmazonEC2ContainerRegistryReadOnly: Allows nodes to access container images on ECR (Elastic Container Registry).
 
-   4- ElasticLoadBalancingFullAccess: EKS, Elastic Load Balancers (ELB) ile etkileşim kurabilir.
+   4- ElasticLoadBalancingFullAccess: EKS can interact with Elastic Load Balancers (ELB).
 
-   5- CloudWatchFullAccess: Node'ların CloudWatch üzerinden metrik ve loglara erişimini sağlar.
+   5- CloudWatchFullAccess: Allows nodes to access metrics and logs via CloudWatch.
 
-   6- AutoScalingFullAccess: Node'ların Auto Scaling işlemlerini gerçekleştirebilmesi için gerekli yetkiyi sağlar.
+   6- AutoScalingFullAccess: Provides the necessary authorization for nodes to perform Auto Scaling operations.
 
-   7- AmazonRDSFullAccess: Node'ların RDS veritabanlarına tam erişim izni verir.
+   7- AmazonRDSFullAccess: Allows nodes full access to RDS databases.
 
-   8- SecretsManagerReadWrite: Node'ların AWS Secrets Manager'dan şifreleri okuyup yazabilmesini sağlar.
+   8- SecretsManagerReadWrite: Allows nodes to read and write passwords from AWS Secrets Manager.
 
 ````sh
 
@@ -1060,7 +1055,7 @@ resource "aws_eks_cluster" "eks_cluster" {
     subnet_ids         = aws_subnet.private_eks_subnet[*].id
     security_group_ids = [aws_security_group.eks_cluster_sg.id]
     endpoint_private_access = true
-    endpoint_public_access  = true  #or false 
+    endpoint_public_access  = false   #or true
   }
   enabled_cluster_log_types = [
     "api",
@@ -1145,7 +1140,7 @@ resource "aws_autoscaling_policy" "scale_up" {
   ]
 }
 
-# (Opsiyonel) Auto Scaling Policy for Scaling Down
+# Auto Scaling Policy for Scaling Down
 resource "aws_autoscaling_policy" "scale_down" {
   name                   = "scale-down"
   autoscaling_group_name = data.aws_autoscaling_groups.eks_node_asg.names[0]
@@ -1196,15 +1191,15 @@ resource "aws_cloudwatch_metric_alarm" "cpu_alarm_low" {
 }
 ````
 
->>> Bu Terraform yapılandırmasında Amazon EKS (Elastic Kubernetes Service) ve Auto Scaling ile ilgili kaynaklar tanımlanmıştır. 
-- Cluster public erişime kapalıdır.
-- Node Sayısı Minimum 1, maksimum 2 node çalıştırır.
-- EC2 instance'ları t3.medium tipi olacak şekilde ayarlanmıştır.
-- SSH anahtarı ile EC2'lara uzaktan erişim sağlanıyor.
-- EKS Node Group'a bağlı Auto Scaling Group'un (ASG) adı çekilir ve EC2 instance'ların CPU kullanımına göre otomatik ölçeklendirme yapacak politikalar oluşturuluyor.
-- CloudWatch Metric Alarms ile EKS node grubunun CPU kullanımını izleyerek Auto Scaling işlemini tetikler.
-CPU kullanımı %70'in üzerine çıkarsa, daha fazla node ekler.
-CPU kullanımı %30'un altına düşerse, node sayısını azaltır.
+>>> In this Terraform configuration, resources related to Amazon EKS (Elastic Kubernetes Service) and Auto Scaling are defined. 
+- Cluster is closed to public access.
+- Number of Nodes Runs minimum 1 and maximum 2 nodes.
+- EC2 instances are set to be t3.medium type.
+- Remote access to EC2s is provided with SSH key.
+- The name of the Auto Scaling Group (ASG) connected to the EKS Node Group is pulled and policies are created to automatically scale according to the CPU usage of EC2 instances.
+- CloudWatch triggers the Auto Scaling process by monitoring the CPU utilization of the EKS node group with Metric Alarms.
+If CPU utilization goes above 70%, it adds more nodes.
+If CPU utilization drops below 30%, it reduces the number of nodes.
   
 ````sh
 
@@ -1221,7 +1216,7 @@ provider "kubernetes" {
   host                   = data.aws_eks_cluster.eks_cluster.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks_cluster.certificate_authority[0].data)
   exec {
-    api_version = "client.authentication.k8s.io/v1"  # v1beta1 yerine v1 kullanılıyor
+    api_version = "client.authentication.k8s.io/v1"  
     args        = ["eks", "get-token", "--cluster-name", aws_eks_cluster.eks_cluster.name]
     command     = "aws"
   }
@@ -1232,7 +1227,7 @@ provider "helm" {
     host                   = data.aws_eks_cluster.eks_cluster.endpoint
     cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks_cluster.certificate_authority[0].data)
     exec {
-      api_version = "client.authentication.k8s.io/v1"  # v1beta1 yerine v1 kullanılıyor
+      api_version = "client.authentication.k8s.io/v1"  
       args        = ["eks", "get-token", "--cluster-name", aws_eks_cluster.eks_cluster.name]
       command     = "aws"
     }
@@ -1374,27 +1369,28 @@ output "nginx_ingress_lb_hostname" {
 }
 ````
 
->>> Bu Terraform kodu, AWS EKS (Elastic Kubernetes Service) üzerinde bir Kubernetes cluster'ı yapılandırarak, çeşitli Kubernetes bileşenlerinin kurulumu ve yapılandırmasını gerçekleştirir. 
-- Kubernetes ve Helm sağlayıcıları, EKS cluster'ına bağlanarak kullanabilmek için yapılandırılır. AWS CLI kullanarak eks get-token ile cluster'a erişim sağlanır.
-- Argo CD ve NGINX Ingress için Kubernetes namespace'leri oluşturur. Namespace'ler, uygulamaların birbirinden izole çalışmasını sağlar.
-- Argo CD ile GitOps yöntemini kullanarak uygulamaların Kubernetes'e otomatik olarak dağıtılmasını sağlamak için Argo CD Helm kullanılarak kurulur.
--  Null Resource ile Cluster ile kubectl komutları aracılığıyla çalışabilmek için AWS CLI kullanarak kubeconfig dosyasını günceller. (EKS cluster'a public erişim olmalı)
--  Null_resource ile Argo CD ve Ingress için gerekli Kubernetes manifest dosyalarını kubectl apply komutu ile cluster'a uygular.
--  Helm ile NGINX Ingress Controller Kurularak dış dünyadan gelen istekleri içerdeki Kubernetes servislerine yönlendirilir. NGINX Controller, public subnet'te bir LoadBalancer ile dışarıya açılır, böylece uygulamalara internetten erişilebilir.
--  Helm ile Metrics Server Kurulur ve cluster'daki pod ve node'ların CPU ve bellek kullanım bilgilerini sağlar, özellikle autoscaling işlemleri için gereklidir.
--   NGINX Ingress LoadBalancer Bilgilerini Alınır ve Output'ta NGINX Ingress Controller'a atanan LoadBalancer'ın hostname bilgisini çıktı olarak verir. Bu hostname, uygulamalara dışarıdan erişim sağlamak için kullanılır.
+>>> This Terraform script configures a Kubernetes cluster on AWS EKS (Elastic Kubernetes Service) to install and configure various Kubernetes components. 
+- Kubernetes and Helm providers are configured to connect to and use the EKS cluster. Access to the cluster with ex get-token using AWS CLI.
+- Argo CD and NGINX create Kubernetes namespaces for Ingress. Namespaces allow applications to run isolated from each other.
+- Argo CD is installed using Argo CD Helm to enable automatic deployment of applications to Kubernetes using GitOps with Argo CD.
+- With Null Resource updates the kubeconfig file using AWS CLI to be able to work with the cluster via kubectl commands. (EKS must have public access to the cluster)
+- Null_resource applies the Kubernetes manifest files required for Argo CD and Ingress to the cluster with kubectl apply command.
+- By installing NGINX Ingress Controller with Helm, requests from the outside world are directed to Kubernetes services inside. NGINX Controller is exposed to the outside with a LoadBalancer on the public subnet so that applications can be accessed from the internet.
+- Metrics Server is installed with Helm and provides CPU and memory utilization information for pods and nodes in the cluster, especially for autoscaling.
+- Get NGINX Ingress LoadBalancer Information and output the hostname of the LoadBalancer assigned to the NGINX Ingress Controller in Output. This hostname is used to provide external access to applications.
   
 
-Terraform doyasını uygulamak için;
+To apply Terraform saturation;
+
 ````sh
-terraform init  #providers indirir
+terraform init #providers downloads
 ````
 ````sh
-terraform plan #oluşcak kaynakları ve varsa hataları gösterir
+terraform plan #shows the resources that will be generated and any errors
 ````
 ````sh
-terraform apply #kodu uygulamaya başlar, kaynaklar oluşur.
+terraform apply #code starts to apply, resources are created.
 ````
 ````sh
-terraform destroy #Kaynakları sonlandırmak için.
+terraform destroy #To terminate resources.
 ````
