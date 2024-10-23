@@ -1394,3 +1394,10 @@ terraform apply #code starts to apply, resources are created.
 ````sh
 terraform destroy #To terminate resources.
 ````
+
+
+## If you want to manage the cluster with CLI:
+> To get **kubeconfig** information: ````sh aws eks update-kubeconfig --name <cluster_name> --region <your ragion>````
+
+> To get services in all namespaces;
+````sh kubectl get svc -A -o wide```` This output shows the loadbalancer type DNS of ArgoCd and Nginx ingress. You can go to the DNS of Nginx ingress to reach the application.
